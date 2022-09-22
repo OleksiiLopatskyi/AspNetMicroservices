@@ -1,17 +1,21 @@
-using Catalog.API.Settings;
+using AutoMapper;
+using Catalog.API.Core.Entities;
+using Catalog.API.DTO.Request;
+using Catalog.API.Middleware;
+using Catalog.API.Validation;
+using Catalog.BAL;
+using Catalog.Core.Interfaces;
+using Catalog.Core.Settings;
+using Catalog.DAL;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Catalog.API
 {
@@ -32,8 +36,37 @@ namespace Catalog.API
             services.AddSingleton<IDatabaseSettings>(x => x.GetRequiredService<IOptions<DatabaseSettings>>().Value);
 
             //Configure dependencies
+            services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
+            services.AddSingleton(typeof(ICatalogContext<>), typeof(CatalogContext<>));
+            services.AddTransient(typeof(IBaseService<>), typeof(BaseService<>));
 
-            services.AddControllers();
+
+            //Configure AutoMapper
+            services.AddSingleton(provider =>
+            {
+                var config = new MapperConfiguration(cfg =>
+                {
+                    cfg.AddMaps(typeof(Program).Assembly);
+                    cfg.ConstructServicesUsing(type => ActivatorUtilities.CreateInstance(provider, type));
+                });
+                config.AssertConfigurationIsValid();
+                return config.CreateMapper();
+            });
+
+            //Configure Controllers & FluentValidation
+            services.AddControllers()
+                .AddFluentValidation(options =>
+                {
+                    options.RegisterValidatorsFromAssemblyContaining<Program>();
+                })
+                .ConfigureApiBehaviorOptions(options =>
+                {
+                    options.InvalidModelStateResponseFactory = CustomValidationResponse.CreateResponse;
+                });
+
+            //Configure ExceptionHandler
+            services.AddTransient<ExceptionHandlerMiddleware>();
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Catalog.API", Version = "v1" });
@@ -53,7 +86,7 @@ namespace Catalog.API
             app.UseRouting();
 
             app.UseAuthorization();
-
+            app.UseMiddleware<ExceptionHandlerMiddleware>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

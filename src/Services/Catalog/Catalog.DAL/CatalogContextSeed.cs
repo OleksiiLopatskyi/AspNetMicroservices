@@ -1,25 +1,15 @@
-﻿using Catalog.API.Entities;
-using MongoDB.Driver;
+﻿using Catalog.API.Core.Entities;
 using System.Collections.Generic;
 
-namespace Catalog.API.Data
+namespace Catalog.DAL
 {
     public class CatalogContextSeed
     {
-        public static async void SeedData(IMongoCollection<Product> productCollection)
+        public static ICollection<Product> GetPreconfiguredProducts()
         {
-            bool existProduct = productCollection.Find(p => true).Any();
-            if (!existProduct)
+            return new List<Product>()
             {
-                await productCollection.InsertManyAsync(GetPreconfiguredProducts());
-            }
-        }
-
-        public static IEnumerable<Product> GetPreconfiguredProducts()
-        {
-            return new List<Product>
-            {
-                 new Product()
+                new Product()
                 {
                     Id = "602d2149e773f2a3990b47f5",
                     Name = "IPhone X",
