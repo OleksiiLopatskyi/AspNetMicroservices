@@ -1,5 +1,4 @@
-﻿using Catalog.API.Core.Entities;
-using Catalog.Core.Entities;
+﻿using Catalog.Core.Entities;
 using Catalog.Core.Interfaces;
 using Catalog.Core.Settings;
 using MongoDB.Driver;
@@ -17,7 +16,7 @@ namespace Catalog.DAL
 
         public Repository(ICatalogContext<TDocument> catalogContext, IDatabaseSettings databaseSettings) 
         {
-            Collection = catalogContext.Database.GetCollection<TDocument>($"{typeof(TDocument).Name}s");       
+            Collection = catalogContext.Database.GetCollection<TDocument>($"{typeof(TDocument).Name}s");
         }
 
         public IQueryable<TDocument> AsQueryable() => Collection.AsQueryable();

@@ -29,7 +29,7 @@ namespace Catalog.BAL
             await Repository.DeleteByIdAsync(document.Id);
         }
 
-        public virtual async Task<IEnumerable<TResult>> FindAllAsync<TResult>()
+        public virtual async Task<IEnumerable<TResult>> FindAllAsync<TResult, TFilterParams>(TFilterParams filterParams)
         {
             var documents = await Repository.FindAllAsync(x => true);
             return Mapper.Map<IEnumerable<TResult>>(documents);

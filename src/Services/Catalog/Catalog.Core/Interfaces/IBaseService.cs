@@ -6,7 +6,7 @@ namespace Catalog.Core.Interfaces
 {
     public interface IBaseService<TDocument> where TDocument : IDocument
     {
-        Task<IEnumerable<TResult>> FindAllAsync<TResult>();
+        Task<IEnumerable<TResult>> FindAllAsync<TResult, TFilterParams>(TFilterParams filterParams);
         Task<TResult> FindByIdAsync<TResult>(string id);
         Task DeleteAsync(string id);
         Task UpdateAsync<TRequest>(string id, TRequest request);

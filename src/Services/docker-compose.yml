@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  catalogdb:
+    image: mongo
+  
+  redisdb:
+    image: redis:alpine
+
+  catalog.api:
+    image: ${DOCKER_REGISTRY-}catalogapi
+    build: 
+      context: Catalog/
+
+  basket.api:
+    image: ${DOCKER_REGISTRY-}basket.api
+    build: 
+      context: Basket/

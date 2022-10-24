@@ -1,8 +1,4 @@
 using AutoMapper;
-using Catalog.API.Core.Entities;
-using Catalog.API.DTO.Request;
-using Catalog.API.Middleware;
-using Catalog.API.Validation;
 using Catalog.BAL;
 using Catalog.Core.Interfaces;
 using Catalog.Core.Settings;
@@ -11,11 +7,13 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using OLopatskyi.ErrorsHandler;
+using OLopatskyi.ErrorsHandler.MapperProfiles;
 
 namespace Catalog.API
 {
@@ -38,7 +36,7 @@ namespace Catalog.API
             //Configure dependencies
             services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
             services.AddSingleton(typeof(ICatalogContext<>), typeof(CatalogContext<>));
-            services.AddTransient(typeof(IBaseService<>), typeof(BaseService<>));
+            services.AddTransient<IProductService, ProductService>();
 
 
             //Configure AutoMapper
@@ -47,6 +45,7 @@ namespace Catalog.API
                 var config = new MapperConfiguration(cfg =>
                 {
                     cfg.AddMaps(typeof(Program).Assembly);
+                    cfg.AddMaps(typeof(ErrorMapperProfile).Assembly);
                     cfg.ConstructServicesUsing(type => ActivatorUtilities.CreateInstance(provider, type));
                 });
                 config.AssertConfigurationIsValid();
@@ -54,15 +53,18 @@ namespace Catalog.API
             });
 
             //Configure Controllers & FluentValidation
-            services.AddControllers()
-                .AddFluentValidation(options =>
+            services.AddControllers().ConfigureApiBehaviorOptions(options =>
+            {
+                options.InvalidModelStateResponseFactory = context =>
                 {
-                    options.RegisterValidatorsFromAssemblyContaining<Program>();
-                })
-                .ConfigureApiBehaviorOptions(options =>
-                {
-                    options.InvalidModelStateResponseFactory = CustomValidationResponse.CreateResponse;
-                });
+                    var errors = new InvalidModelStateHandler(context).Errors;
+                    return new BadRequestObjectResult(errors);
+                };
+            });
+
+            //Configure validation pipeline
+            services.AddFluentValidationAutoValidation();
+            services.AddValidatorsFromAssemblyContaining(typeof(Program));
 
             //Configure ExceptionHandler
             services.AddTransient<ExceptionHandlerMiddleware>();
@@ -76,12 +78,9 @@ namespace Catalog.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Catalog.API v1"));
-            }
+            app.UseDeveloperExceptionPage();
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Catalog.API v1"));
 
             app.UseRouting();
 

@@ -1,5 +1,4 @@
-﻿using Catalog.API.Core.Entities;
-using Catalog.Core.Entities;
+﻿using Catalog.Core.Entities;
 using Catalog.Core.Interfaces;
 using Catalog.Core.Settings;
 using MongoDB.Driver;

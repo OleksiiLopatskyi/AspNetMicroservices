@@ -4,6 +4,7 @@ using Catalog.API.DTO.Response;
 using Catalog.Core.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -13,19 +14,27 @@ namespace Catalog.API.Controllers
     [ApiController]
     public class ProductController : ControllerBase
     {
-        private readonly IBaseService<Product> _productService;
+        private readonly IProductService _productService;
+        private readonly IConfiguration _configuration;
 
-        public ProductController(IBaseService<Product> productService)
+        public ProductController(IProductService productService, IConfiguration configuration)
         {
             _productService = productService;
+            _configuration = configuration;
         }
 
 
+        [HttpGet("GetConnectionString")]
+        public IActionResult GetConnectionString()
+        {
+            return Ok(_configuration.GetSection("DatabaseSettings").GetValue<string>("ConnectionString"));
+        }
+
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<MinimalProductResponse>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetProductsAsync()
+        public async Task<IActionResult> GetProductsAsync([FromQuery] ProductFilterParameters parameters)
         {
-            return Ok(await _productService.FindAllAsync<MinimalProductResponse>());
+            return Ok(await _productService.FindAllAsync<MinimalProductResponse, ProductFilterParameters>(parameters));
         }
 
         [HttpGet("{id}")]
